@@ -1,18 +1,21 @@
 <!-- App.svelte -->
 <script lang="ts">
+	import { WebSocketClient, WebRTC } from '$lib';
+
 	import { onDestroy, onMount } from 'svelte';
 	import { v4 } from 'uuid';
-	const signalingServerUrl = 'ws://localhost:8080';
+
 	let id = v4();
-	let ws: WebSocket | null = null;
+	let wsc: WebSocketClient | null = null;
+	let wrtc: WebRTC | null = null;
 
 	onMount(() => {
-		ws = new WebSocket(signalingServerUrl);
-		console.log(ws);
+		wsc = WebSocketClient.getInstance();
+		wrtc = WebRTC.getInstance();
 
 		// Handle incoming messages from the signaling server
-		ws.onmessage = (event) => {
-			if (!connection) return;
+		wsc.setOnMessage((event) => {
+			if (!wrtc?.getConnectObject()) return;
 			const message = JSON.parse(event.data);
 
 			if (message.type === 'offer') {
@@ -22,151 +25,83 @@
 			} else if (message.type === 'iceCandidate') {
 				onIceCandidate(message);
 			}
-		};
+		});
 
-		const servers = null;
-		connection = new RTCPeerConnection(servers);
+		wsc?.setOnConnected(setupWebRTC);
 	});
 
-	onDestroy(() => {
-		ws = null;
-		connection = null;
-	});
+	function setupWebRTC() {
+		wrtc?.createConnection();
 
-	let video1: HTMLVideoElement, stream: MediaStream, video2: HTMLVideoElement;
-
-	let connection: any;
-	let sendChannel: any;
-	let receiveChannel: any;
-	let dataChannelSendValue = '';
-	let dataChannelReceiveValue = '';
-	let isSendChannelOpen = false;
-
-	const createConnection = () => {
-		console.log(connection);
-		console.log('Created local peer connection object connection');
-
-		sendChannel = connection.createDataChannel('sendDataChannel');
-		console.log('Created send data channel');
-
-		connection.onicecandidate = (event) => {
-			console.log(event, 'ice');
+		wrtc?.setOnIceCandidate((event: any) => {
 			if (event.candidate) {
-				sendMessage({ id, candidate: event.candidate, type: 'iceCandidate' });
+				wsc?.send({ id, candidate: event.candidate, type: 'iceCandidate' });
 			}
-		};
+		});
 
 		if (stream) {
 			stream.getTracks().forEach((track) => {
 				console.log(track.id);
-				connection!.addTrack(track, stream!);
+				wrtc?.getConnectObject()!.addTrack(track, stream!);
 			});
 		}
-		sendChannel.onopen = onSendChannelStateChange;
-		sendChannel.onclose = onSendChannelStateChange;
 
-		connection.ondatachannel = receiveChannelCallback;
-		connection.ontrack = (event) => {
-			console.log(event);
-			// Event contains the received MediaStreamTrack
-			// You can attach it to the video element as shown below
+		wrtc?.setOnTrack((event: any) => {
 			if (video2.srcObject !== event.streams[0]) {
 				video2.srcObject = event.streams[0];
 			}
-		};
+		});
 
-		connection.createOffer().then((desc) => {
-			connection.setLocalDescription(desc);
-			sendMessage({ id, desc, type: 'offer' });
-		}, onCreateSessionDescriptionError);
-	};
+		wrtc
+			?.getConnectObject()
+			?.createOffer()
+			.then(
+				(desc) => {
+					wrtc?.getConnectObject()?.setLocalDescription(desc);
+					wsc?.send({ id, desc, type: 'offer' });
+				},
+				(e) => console.log(`Error creating offer ${JSON.stringify(e)}`)
+			);
+	}
 
-	// Function to send data to the signaling server
-	const sendMessage = (message: any) => {
-		if (ws && ws.readyState === WebSocket.OPEN) {
-			ws.send(JSON.stringify(message));
-		}
-		console.log(ws);
-	};
+	onDestroy(() => {
+		wsc?.close();
+		wrtc?.close();
+	});
 
-	const sendData = () => {
-		sendChannel.send(dataChannelSendValue);
-		console.log('Sent Data: ' + dataChannelSendValue);
-	};
-
-	const closeDataChannels = () => {
-		console.log('Closing data channels');
-		sendChannel.close();
-		console.log('Closed data channel with label: ' + sendChannel.label);
-		receiveChannel.close();
-		console.log('Closed data channel with label: ' + receiveChannel.label);
-		connection.close();
-		connection = null;
-		console.log('Closed peer connections');
-		dataChannelSendValue = '';
-		dataChannelReceiveValue = '';
-	};
+	let video1: HTMLVideoElement, stream: MediaStream, video2: HTMLVideoElement;
 
 	const gotOffer = (message) => {
 		if (message?.id !== id) {
-			connection.setRemoteDescription(message.desc);
-			console.log(`Offer from connection\n${message.desc}`);
-			connection.createAnswer().then((desc) => {
-				connection.setLocalDescription(desc);
-				sendMessage({ id, desc, type: 'answer' });
-			}, onCreateSessionDescriptionError);
+			wrtc?.getConnectObject()?.setRemoteDescription(message.desc);
+			wrtc
+				?.getConnectObject()
+				?.createAnswer()
+				.then(
+					(desc) => {
+						wrtc?.getConnectObject()?.setLocalDescription(desc);
+						wsc?.send({ id, desc, type: 'answer' });
+					},
+					(e) => console.log(`Error creating SDP ${JSON.stringify(e)}`)
+				);
 		}
 	};
 
 	const gotAnswer = (message) => {
 		if (message?.id !== id) {
-			connection.setRemoteDescription(message?.desc);
-			console.log(`Answer from remoteConnection\n${message?.desc.sdp}`);
+			wrtc?.getConnectObject()?.setRemoteDescription(message?.desc);
 		}
 	};
 
 	const onIceCandidate = (message) => {
 		if (message?.id !== id && message?.candidate) {
-			connection
-				.addIceCandidate(message.candidate)
-				.then(onAddIceCandidateSuccess)
-				.catch(onAddIceCandidateError);
-			console.log(`ICE candidate received and added.`, 'id', message.id, message.candidate);
+			wrtc
+				?.getConnectObject()
+				?.addIceCandidate(message.candidate)
+				.then(() => console.log(`Added IceCandidate`))
+				.catch((error) => console.log(`Error in adding IceCandidate ${JSON.stringify(error)}`));
 		}
 	};
-
-	function onAddIceCandidateSuccess() {
-		console.log('AddIceCandidate success.');
-	}
-
-	function onAddIceCandidateError(error) {
-		console.log(`Failed to add Ice Candidate: ${error.toString()}`);
-	}
-	function receiveChannelCallback(event) {
-		console.log('Receive Channel Callback');
-		receiveChannel = event.channel;
-		receiveChannel.onmessage = onReceiveMessageCallback;
-		receiveChannel.onopen = onReceiveChannelStateChange;
-		receiveChannel.onclose = onReceiveChannelStateChange;
-	}
-
-	const onReceiveMessageCallback = (event) => {
-		dataChannelReceiveValue = event.data;
-	};
-
-	const onSendChannelStateChange = () => {
-		const readyState = sendChannel.readyState;
-		isSendChannelOpen = readyState === 'open';
-	};
-
-	const onReceiveChannelStateChange = () => {
-		const readyState = receiveChannel.readyState;
-		console.log(`Receive channel state is: ${readyState}`);
-	};
-
-	function onCreateSessionDescriptionError(error) {
-		console.log('Failed to create session description: ' + error.toString());
-	}
 
 	const handleFileChange = (event: any) => {
 		const file = event.target.files[0];
@@ -178,9 +113,10 @@
 			//@ts-ignore
 			stream = video1.captureStream();
 			if (stream) {
-				console.log(stream);
+				console.log(stream.getTracks());
 				stream.getTracks().forEach((track) => {
-					connection!.addTrack(track, stream!);
+					wrtc?.getConnectObject()?.addTrack(track, stream!);
+					console.log(wrtc, 'wow');
 				});
 			}
 		}
@@ -188,15 +124,10 @@
 </script>
 
 <main>
-	<button on:click={createConnection} disabled={false}>Start</button>
-	<textarea id="dataChannelSend" bind:value={dataChannelSendValue} disabled={!isSendChannelOpen} />
-	<button on:click={sendData} disabled={!isSendChannelOpen}>Send</button>
-	<textarea
-		id="dataChannelReceive"
-		bind:value={dataChannelReceiveValue}
-		disabled={!isSendChannelOpen}
-	/>
-	<button on:click={closeDataChannels} disabled={!isSendChannelOpen}>Close</button>
+	<button disabled={false} on:click={setupWebRTC}>Start</button>
+	<textarea id="dataChannelSend" disabled={!wrtc?.getIsSendChannelOpen()} />
+	<button on:click={wrtc?.send} disabled={!wrtc?.getIsSendChannelOpen()}>Send</button>
+	<textarea id="dataChannelReceive" disabled={!wrtc?.getIsSendChannelOpen()} />
 </main>
 
 <video id="user1" bind:this={video1} controls><track kind="captions" /></video>
@@ -207,6 +138,6 @@
 
 <button
 	on:click={() => {
-		sendMessage('Hello world');
+		wsc?.send('Hello world');
 	}}>send message</button
 >
