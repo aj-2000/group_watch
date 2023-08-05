@@ -15,7 +15,8 @@ export class WebSocketClient {
 	}
 
 	private connect() {
-		this.ws = new WebSocket('wss://signalling-server-2br7.onrender.com');
+		// this.ws = new WebSocket('wss://signalling-server-2br7.onrender.com');
+		this.ws = new WebSocket('ws://localhost:8080');
 
 		this.ws.onopen = (event) => {
 			if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -67,5 +68,9 @@ export class WebSocketClient {
 
 	public setOnClose(handler: (event: Event) => void) {
 		if (this.ws) this.ws.onclose = handler;
+	}
+
+	public isConnected() {
+		return this.connected;
 	}
 }
