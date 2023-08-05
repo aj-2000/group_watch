@@ -15,7 +15,7 @@ export class WebSocketClient {
 	}
 
 	private connect() {
-		this.ws = new WebSocket('ws://localhost:8080');
+		this.ws = new WebSocket('wss://signalling-server-2br7.onrender.com');
 
 		this.ws.onopen = (event) => {
 			if (this.ws && this.ws.readyState === WebSocket.OPEN) {
