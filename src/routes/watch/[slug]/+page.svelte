@@ -3,7 +3,6 @@
 	import { WebSocketClient } from '$lib';
 	import { configuration } from '$lib/webrtc';
 	import { onDestroy, onMount } from 'svelte';
-	import { v4 } from 'uuid';
 	import { user } from '../../../stores';
 
 	let wsc: WebSocketClient | null = null;
@@ -103,7 +102,7 @@
 	};
 </script>
 
-<video id="user2" bind:this={video} controls><track kind="captions" /></video>
+<video id="user2" bind:this={video} controls autoplay><track kind="captions" /></video>
 
 <button
 	on:click={() => {

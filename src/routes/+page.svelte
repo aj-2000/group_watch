@@ -43,7 +43,7 @@
 	}
 </script>
 
-<button on:click={handleQuickCreateRoom}> Quick Create </button>
+<button on:click={handleQuickCreateRoom} class="text-green-700"> Quick Create </button>
 
 <button on:click={handleJoinRoom}> Join </button>
 <input type="text" bind:value={roomId} />

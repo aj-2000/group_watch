@@ -10,7 +10,7 @@
 	let wsc: WebSocketClient | null = null;
 	let roomId = $page.params.slug;
 	let userId = $user.id;
-	let participantsList = $participants;
+
 	const connections: any = {};
 
 	onMount(() => {
@@ -21,6 +21,7 @@
 			const message = JSON.parse(event.data);
 			console.log(message, 'room');
 			if (message.command === 'roomUpdate') {
+				console.log(message, 'room');
 				participants.set(message.participants);
 				stream ?? setupWebRTC();
 				// } else if (message.type === 'offer') {
@@ -35,41 +36,30 @@
 		wsc?.setOnConnected(() => {});
 	});
 
-	function joinRoom() {
-		console.log('joining room', roomId);
-		if (roomId) {
-			wsc?.send({
-				roomId,
-				userId,
-				command: 'createRoom'
-			});
-		}
-	}
-
 	function setupWebRTC() {
 		$participants
 			.filter((participantUserId) => participantUserId !== userId)
 			.forEach((participantUserId) => {
 				if (!connections[participantUserId]) {
-					console.log(participantUserId, connections[participantUserId]);
 					connections[participantUserId] = new RTCPeerConnection(configuration);
 					connections[participantUserId].onicecandidate = (event) => {
 						onIceCandidateWRTC(event, participantUserId);
 					};
-
-					stream.set(video.captureStream());
-					if ($stream) {
-						console.log($stream, '2');
-						$stream.getTracks().forEach((track) => {
-							connections[participantUserId].addTrack(track, $stream);
-						});
-					}
-					// connections[participantUserId].ontrack = (event) => {
-					// 	handleRemoteTrack(event, participantUserId);
-					// }; d
-					console.log(participantUserId, connections[participantUserId]);
-					createOfferAndSend(participantUserId);
 				}
+				console.log(participantUserId, connections[participantUserId]);
+
+				stream.set(video.captureStream());
+				if ($stream) {
+					console.log($stream, '2');
+					$stream.getTracks().forEach((track) => {
+						connections[participantUserId].addTrack(track, $stream);
+					});
+				}
+				// connections[participantUserId].ontrack = (event) => {
+				// 	handleRemoteTrack(event, participantUserId);
+				// }; d
+				console.log(participantUserId, connections[participantUserId]);
+				createOfferAndSend(participantUserId);
 			});
 		console.log('webrtc', $participants, connections);
 	}
@@ -137,35 +127,20 @@
 		}
 	};
 
-	// const switchStream = (event) => {
-	// 	console.log(event);
-	// 	//@ts-ignore
-	// 	const stream = video.captureStream();
-
-	// 	if (stream) {
-	// 		console.log(stream.getTracks());
-
-	// 		// Add tracks to the connections for each participant
-	// 		$participants.forEach((participant) => {
-	// 			connections[participant]?.addStream(stream);
-	// 		});
-	// 	}
-	// };
+	const onVideoFileChange = (event: any) => {
+		if ($stream && $stream === video.captureStream()) {
+			return;
+		}
+		if (!$stream) return;
+		setupWebRTC();
+	};
 </script>
 
-<!-- <main>
-	<button disabled={false} on:click={setupWebRTC}>Start</button>
-</main> -->
-
-<video id="user1" bind:this={video} controls><track kind="captions" /></video>
+<video on:loadedmetadata={onVideoFileChange} id="user1" bind:this={video} controls
+	><track kind="captions" /></video
+>
 
 <input type="file" on:change={handleFileChange} />
 {`userID: ${userId}`}
-
-<button
-	on:click={() => {
-		wsc?.send('Hello world');
-	}}>send message</button
->
 
 <button on:click={() => setupWebRTC()}>Broadcast</button>
