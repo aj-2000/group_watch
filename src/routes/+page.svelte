@@ -2,35 +2,52 @@
 	import { goto } from '$app/navigation';
 	import { WebSocketClient } from '$lib';
 	import { onMount } from 'svelte';
-	import { v4 } from 'uuid';
+	import { user } from '../stores';
+	import { v4 as uuidv4 } from 'uuid';
 
 	let wsc;
+	let roomId: string = '';
+	let userId = $user.id;
 
 	onMount(() => {
 		wsc = WebSocketClient.getInstance();
 		wsc.setOnMessage(({ data }) => {
 			const message = JSON.parse(data);
-			console.log(message, 'home');
-
+			//TODO: isBroadcaster correct logic
 			if (message.roomId) {
-				goto(`/room/${message.roomId}`);
+				message.roomId === roomId
+					? goto(`/watch/${message.roomId}`)
+					: goto(`/broadcast/${message.roomId}`);
 			}
 		});
 	});
 
 	function handleQuickCreateRoom() {
-		const roomId = v4();
+		const roomId = uuidv4();
+		console.log(wsc);
 		wsc?.send({
-			roomId: roomId,
-			command: 'createRoom'
+			roomId,
+			command: 'createRoom',
+			userId
+		});
+	}
+
+	function handleJoinRoom() {
+		if (!roomId) return;
+		console.log(wsc);
+		wsc?.send({
+			roomId,
+			command: 'createRoom',
+			userId
 		});
 	}
 </script>
 
-<button on:click={() => goto('/room/join')}> Join Room </button>
+<button on:click={handleQuickCreateRoom}> Quick Create </button>
 
-<button on:click={() => goto('/room/create')}> Create Room </button>
-
+<button on:click={handleJoinRoom}> Join </button>
+<input type="text" bind:value={roomId} />
+<!-- 
 <button on:click={() => handleQuickCreateRoom()} disabled={!!wsc && !!wsc.isConnected()}>
 	Quick Create Room
-</button>
+</button> -->
