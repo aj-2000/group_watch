@@ -136,9 +136,7 @@
 	};
 </script>
 
-<video on:loadedmetadata={onVideoFileChange} id="user1" bind:this={video} controls
-	><track kind="captions" /></video
->
+<video id="user1" bind:this={video} controls><track kind="captions" /></video>
 
 <input type="file" on:change={handleFileChange} />
 {`userID: ${userId}`}

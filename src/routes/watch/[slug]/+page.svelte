@@ -44,18 +44,18 @@
 		if (!wrtc) return;
 		console.log(wrtc);
 
-		wrtc.onicecandidate = (event: any) => {
-			if (event.candidate) {
-				console.log('icecandidate', event.candidate);
-				wsc?.send({
-					candidate: event.candidate,
-					type: 'iceCandidate',
-					roomId,
-					userId,
-					targetUserId: '1'
-				});
-			}
-		};
+		// wrtc.onicecandidate = (event: any) => {
+		// 	if (event.candidate) {
+		// 		console.log('icecandidate', event.candidate);
+		// 		wsc?.send({
+		// 			candidate: event.candidate,
+		// 			type: 'iceCandidate',
+		// 			roomId,
+		// 			userId,
+		// 			targetUserId: '1'
+		// 		});
+		// 	}
+		// };
 
 		wrtc.ontrack = (event: any) => {
 			if (video.srcObject !== event.streams[0]) {
@@ -73,7 +73,6 @@
 	let video: HTMLVideoElement;
 
 	const gotOffer = (message) => {
-		console.log('gotOffer: ' + message);
 		if (message?.targetUserId === userId) {
 			wrtc?.setRemoteDescription(message.desc);
 			wrtc?.createAnswer().then(
@@ -109,3 +108,5 @@
 		wsc?.send('Hello world');
 	}}>send message</button
 >
+
+<span> WS connected: {wsc?.isConnected()}</span>

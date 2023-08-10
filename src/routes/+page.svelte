@@ -23,8 +23,8 @@
 	});
 
 	function handleQuickCreateRoom() {
-		const roomId = uuidv4();
-		console.log(wsc);
+		let roomId = uuidv4();
+		roomId = 'a';
 		wsc?.send({
 			roomId,
 			command: 'createRoom',
@@ -34,7 +34,6 @@
 
 	function handleJoinRoom() {
 		if (!roomId) return;
-		console.log(wsc);
 		wsc?.send({
 			roomId,
 			command: 'createRoom',
