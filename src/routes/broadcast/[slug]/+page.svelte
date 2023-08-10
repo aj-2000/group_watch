@@ -1,18 +1,22 @@
 <!-- App.svelte -->
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { WebSocketClient } from '$lib';
+	import { RoomManager } from '$lib';
 	import { onMount } from 'svelte';
 	import { user } from '../../../stores';
 
-	let wsc: WebSocketClient | null = null;
 	let userId = $user.id;
 
-	onMount(() => {
-		if ($user) wsc = WebSocketClient.getInstance($user);
-		console.log(wsc);
-	});
+	let roomManager: RoomManager | null = null;
 
+	onMount(() => {
+		if ($user) roomManager = RoomManager.getInstance($user);
+		roomManager?.setOnTrack((event: any) => {
+			if (video.srcObject !== event.streams[0]) {
+				video.srcObject = event.streams[0];
+			}
+		});
+		console.log(roomManager);
+	});
 	let video: HTMLVideoElement;
 
 	const handleFileChange = (event: any) => {
@@ -24,7 +28,7 @@
 	};
 
 	const onVideoFileChange = (event: any) => {
-		wsc?.broadcast(video.captureStream(), userId);
+		roomManager?.broadcast(video.captureStream(), userId);
 	};
 </script>
 
@@ -35,4 +39,4 @@
 <input type="file" on:change={handleFileChange} />
 {`userID: ${userId}`}
 
-<button on:click={() => wsc?.broadcast(video.captureStream(), userId)}>Broadcast</button>
+<button on:click={() => roomManager?.broadcast(video.captureStream(), userId)}>Broadcast</button>

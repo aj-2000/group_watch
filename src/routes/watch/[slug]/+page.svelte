@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { WebSocketClient } from '$lib';
+	import { RoomManager } from '$lib';
 	import { onMount } from 'svelte';
 	import { user } from '../../../stores';
 
-	let wsc: WebSocketClient | null = null;
+	let roomManager: RoomManager | null = null;
 
 	onMount(() => {
-		if (user) wsc = WebSocketClient.getInstance($user);
-		wsc?.setOnTrack((event: any) => {
+		if ($user) roomManager = RoomManager.getInstance($user);
+		roomManager?.setOnTrack((event: any) => {
 			if (video.srcObject !== event.streams[0]) {
 				video.srcObject = event.streams[0];
 			}
 		});
-		console.log(wsc);
+		console.log(roomManager);
 	});
 
 	let video: HTMLVideoElement;
@@ -22,8 +22,8 @@
 
 <button
 	on:click={() => {
-		wsc?.send('Hello world');
+		roomManager?.sendMessage('Hello world');
 	}}>send message</button
 >
 
-<span> WS connected: {wsc?.isConnected()}</span>
+<span> WS connected: {roomManager?.isConnected()}</span>
