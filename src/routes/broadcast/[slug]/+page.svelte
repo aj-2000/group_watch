@@ -23,6 +23,7 @@
 			if (message.command === 'roomUpdate') {
 				console.log(message, 'room');
 				participants.set(message.participants);
+				console.log($stream, $participants);
 				stream ?? setupWebRTC();
 				// } else if (message.type === 'offer') {
 				// 	gotOffer(message);
@@ -37,29 +38,26 @@
 	});
 
 	function setupWebRTC() {
+		console.log('setupWebRTC called');
+		stream.set(video.captureStream());
 		$participants
 			.filter((participantUserId) => participantUserId !== userId)
 			.forEach((participantUserId) => {
 				if (!connections[participantUserId]) {
 					connections[participantUserId] = new RTCPeerConnection(configuration);
-					connections[participantUserId].onicecandidate = (event) => {
-						onIceCandidateWRTC(event, participantUserId);
-					};
 				}
+				connections[participantUserId].onicecandidate = (event) => {
+					onIceCandidateWRTC(event, participantUserId);
+				};
 				console.log(participantUserId, connections[participantUserId]);
 
-				stream.set(video.captureStream());
+				console.log(participantUserId, $stream);
 				if ($stream) {
-					console.log($stream, '2');
 					$stream.getTracks().forEach((track) => {
 						connections[participantUserId].addTrack(track, $stream);
 					});
+					createOfferAndSend(participantUserId);
 				}
-				// connections[participantUserId].ontrack = (event) => {
-				// 	handleRemoteTrack(event, participantUserId);
-				// }; d
-				console.log(participantUserId, connections[participantUserId]);
-				createOfferAndSend(participantUserId);
 			});
 		console.log('webrtc', $participants, connections);
 	}
@@ -136,7 +134,9 @@
 	};
 </script>
 
-<video id="user1" bind:this={video} controls><track kind="captions" /></video>
+<video id="user1" on:loadeddata={onVideoFileChange} bind:this={video} controls
+	><track kind="captions" /></video
+>
 
 <input type="file" on:change={handleFileChange} />
 {`userID: ${userId}`}
