@@ -37,6 +37,7 @@ export default class RoomManager {
 	}
 
 	public joinRoom(roomId: string, userId: string) {
+		console.log('JoinRoom', roomId, userId, this.room);
 		if (!this.room) {
 			this.wsc.joinRoom(roomId, userId);
 		}

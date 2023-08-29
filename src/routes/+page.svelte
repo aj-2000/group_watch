@@ -31,4 +31,3 @@
 
 <button on:click={handleJoinRoom}> Join </button>
 <input type="text" bind:value={roomId} />
-<pre> {JSON.stringify(roomManager)} </pre>

@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { RoomManager } from '$lib';
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { user } from '../../../stores';
 
 	let userId = $user.id;
@@ -9,13 +10,18 @@
 	let roomManager: RoomManager | null = null;
 
 	onMount(() => {
-		if ($user) roomManager = RoomManager.getInstance($user);
-		roomManager?.setOnTrack((event: any) => {
-			if (video.srcObject !== event.streams[0]) {
-				video.srcObject = event.streams[0];
+		if ($user) {
+			roomManager = RoomManager.getInstance($user);
+			if (!roomManager.getCurrentRoom()) {
+				goto('/');
+				return;
 			}
-		});
-		console.log(roomManager);
+			roomManager.setOnTrack((event: any) => {
+				if (video.srcObject !== event.streams[0]) {
+					video.srcObject = event.streams[0];
+				}
+			});
+		}
 	});
 	let video: HTMLVideoElement;
 
