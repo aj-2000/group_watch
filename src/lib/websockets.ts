@@ -65,6 +65,7 @@ export default class WebSocketClient {
 					name,
 					broadcasterId
 				});
+				this.roomManager?.callOnRoomUpdate();
 			} else if (message.command === 'offer') {
 				this.webRTCManager?.gotOffer(message, user.id);
 			} else if (message.command === 'answer') {

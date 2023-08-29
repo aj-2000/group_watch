@@ -21,6 +21,10 @@
 					video.srcObject = event.streams[0];
 				}
 			});
+			roomManager.setOnRoomUpdate(() => {
+				console.log(video);
+				if (video) roomManager?.broadcast(video.captureStream(), userId);
+			});
 		}
 	});
 	let video: HTMLVideoElement;
@@ -44,5 +48,3 @@
 
 <input type="file" on:change={handleFileChange} />
 {`userID: ${userId}`}
-
-<button on:click={() => roomManager?.broadcast(video.captureStream(), userId)}>Broadcast</button>

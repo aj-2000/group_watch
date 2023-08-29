@@ -11,6 +11,7 @@ export default class RoomManager {
 	private static instance: RoomManager;
 	private room: Room | null = null;
 	private wsc: WebSocketClient;
+	private onRoomUpdate: () => void = () => {};
 
 	private constructor(user: User) {
 		this.wsc = WebSocketClient.getInstance(user);
@@ -69,5 +70,13 @@ export default class RoomManager {
 
 	public isConnected() {
 		return this.wsc.isConnected();
+	}
+
+	public setOnRoomUpdate(handler: () => void) {
+		this.onRoomUpdate = handler;
+	}
+
+	public callOnRoomUpdate() {
+		this.onRoomUpdate();
 	}
 }
