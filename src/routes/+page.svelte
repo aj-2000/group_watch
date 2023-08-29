@@ -32,7 +32,3 @@
 <button on:click={handleJoinRoom}> Join </button>
 <input type="text" bind:value={roomId} />
 <pre> {JSON.stringify(roomManager)} </pre>
-<!-- 
-<button on:click={() => handleQuickCreateRoom()} disabled={!!wsc && !!wsc.isConnected()}>
-	Quick Create Room
-</button> -->

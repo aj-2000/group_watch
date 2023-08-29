@@ -1,1 +1,1 @@
-export { RoomManager } from '$lib/room';
+export { default as RoomManager } from './room';
