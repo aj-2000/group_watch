@@ -121,6 +121,4 @@ export default class WebRTCManager {
 			}
 		}
 	}
-
-	// ... other methods
 }
